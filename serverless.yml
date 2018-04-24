@@ -25,18 +25,27 @@ provider:
         - "dynamodb:*"
         - "s3:*"
       Resource: "*"
+  environment:
+      PHOTOS_TABLE_NAME: Photos
+      PHOTOS_BUCKET: serverless-pict-storage
+
 
 functions:
   post-images:
     handler: src/post-images.handler
-    environment:
-      PHOTOS_TABLE_NAME: Photos
-      PHOTOS_BUCKET: serverless-pict-storage
     events:
       - http:
           path: images
           method: post
           cors: true
+  update-images:
+    handler: src/update-images.handler
+    events:
+      - http:
+          path: images
+          method: put
+          cors: true
+
 
 resources:
   Resources:
