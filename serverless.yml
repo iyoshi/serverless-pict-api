@@ -1,0 +1,63 @@
+# Welcome to Serverless!
+#
+# optional parameters
+#   - region
+#   - stage
+#
+
+service: serverless-pict-api
+frameworkVersion: "1.26.1"
+
+plugins:
+  - serverless-python-requirements
+
+provider:
+  name: aws
+  runtime: python3.6
+  stage: ${opt:stage, 'development'}
+  region: ${opt:region, 'us-east-1'}
+  memorySize: 256
+  timeout: 25
+  logRetentionInDays: 14
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - "dynamodb:*"
+        - "s3:*"
+      Resource: "*"
+
+functions:
+  post-images:
+    handler: src/post-images.handler
+    environment:
+      PHOTOS_TABLE_NAME: Photos
+      PHOTOS_BUCKET: serverless-pict-storage
+    events:
+      - http:
+          path: images
+          method: post
+          cors: true
+
+resources:
+  Resources:
+
+    PhotosTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: photo_id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: photo_id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        TableName: Photos
+
+    PhotosBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: serverless-pict-storage
+        WebsiteConfiguration:
+          IndexDocument: index.html
