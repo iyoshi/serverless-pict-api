@@ -1,9 +1,10 @@
 import json
+import logging
 import os
 
 import boto3
+from boto3.dynamodb.conditions import Attr
 from botocore.client import ClientError
-import logging
 
 from src.decimalencoder import DecimalEncoder
 
@@ -12,10 +13,6 @@ logger.setLevel(logging.INFO)
 
 dynamodb = boto3.resource('dynamodb', region_name=os.getenv('AWS_DEFAULT_REGION'))
 table = dynamodb.Table(os.getenv('PHOTOS_TABLE_NAME'))
-
-def validate_request_body(body):
-
-    return body.keys() >= { 'photo_id', 'created_at', 'status' }
 
 
 def handler(event, context):
@@ -27,41 +24,8 @@ def handler(event, context):
     :return: TBD
     """
 
-    body = json.loads(event['body'])
-    if not validate_request_body(body):
-
-        logger.error("Validation Failed")
-
-        return {
-            'statusCode': 400,
-            'body': 'Required params is invalid',
-            'headers': {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': "*"
-            }
-        }
-
-    photo_id = body['image_id']
-    status = body['status']
-
     try:
-        table.update_item(
-            Key={
-                'photo_id': photo_id
-            },
-            AttributeUpdates={
-                'status': {
-                    'Value': status,
-                    'Action': 'PUT'
-                }
-            }
-        )
-
-        result = table.get_item(
-            Key={
-                'photo_id': photo_id
-            }
-        )
+        result = table.scan(FilterExpression=Attr('status').eq('uploaded'))
 
     except ClientError as err:
         logger.error(err.response['Error']['Code'])
@@ -71,16 +35,18 @@ def handler(event, context):
             'body': err.response['Error']['Code'],
             'headers': {
                 'Content-Type': 'application/json',
-                'Access-Control-Origin': '*'
+                'Access-Control-Allow-Origin': '*'
             }
         }
 
     try:
-        response_body = json.dumps(result['Item'], cls=DecimalEncoder)
+        items = {
+            'photos': result['Items']
+        }
 
         return {
             'statusCode': 200,
-            'body': response_body,
+            'body': json.dumps(items, cls=DecimalEncoder),
             'headers': {
                 'Content-Type': 'application/json',
                 'Access-Control-Allow-Origin': '*'
@@ -89,6 +55,7 @@ def handler(event, context):
 
     except Exception as err:
         logger.error('type: {}'.format(type(err)))
+        logger.error(err)
 
         return {
             'statusCode': 500,
