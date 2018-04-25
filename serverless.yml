@@ -52,6 +52,13 @@ functions:
           path: images
           method: get
           cors: true
+  get-image:
+    handler: src/get-image.handler
+    events:
+      - http:
+          path: images/{image_id}
+          method: get
+          cors: true
 
 resources:
   Resources:
