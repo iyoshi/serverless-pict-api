@@ -59,6 +59,13 @@ functions:
           path: images/{image_id}
           method: get
           cors: true
+  delete-image:
+    handler: src/delete-image.handler
+    events:
+      - http:
+          path: images/{image_id}
+          method: delete
+          cors: true
 
 resources:
   Resources:
