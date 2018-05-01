@@ -90,3 +90,15 @@ resources:
         BucketName: serverless-pict-storage
         WebsiteConfiguration:
           IndexDocument: index.html
+        CorsConfiguration:
+          CorsRules:
+            - AllowedHeaders:
+                - "*"
+              AllowedMethods:
+                - GET
+                - POST
+                - PUT
+                - DELETE
+              AllowedOrigins:
+                - "*"
+              MaxAge: 3000
