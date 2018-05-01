@@ -44,7 +44,7 @@ def handler(event, context):
             'body': err.response['Error']['Code'],
             'headers': {
                 'Content-Type': 'application/json',
-                'Access-Control-Origin': '*'
+                'Access-Control-Allow-Origin': '*'
             }
         }
 
@@ -56,7 +56,7 @@ def handler(event, context):
         'body': json.dumps(item),
         'headers': {
             'Content-Type': 'application/json',
-            'Access-Control-Origin': '*'
+            'Access-Control-Allow-Origin': '*'
         }
     }
 
@@ -70,9 +70,10 @@ def get_pre_signed_url(bucket, key, type):
     try:
 
         url = s3.generate_presigned_url(
-            ClientMethod='post_object',
-            Params={ 'Bucket': bucket, 'Key': key, 'ContentType': type },
-            HttpMethod='PUT'
+            ClientMethod='put_object',
+            Params={ 'Bucket': bucket, 'Key': key },
+            HttpMethod='PUT',
+            ExpiresIn=3600
         )
 
         return url

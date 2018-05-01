@@ -71,7 +71,7 @@ def handler(event, context):
             'body': err.response['Error']['Code'],
             'headers': {
                 'Content-Type': 'application/json',
-                'Access-Control-Origin': '*'
+                'Access-Control-Allow-Origin': '*'
             }
         }
 
