@@ -24,11 +24,11 @@ provider:
       Action:
         - "dynamodb:*"
         - "s3:*"
+        - "rekognition:*"
       Resource: "*"
   environment:
       PHOTOS_TABLE_NAME: Photos
       PHOTOS_BUCKET: serverless-pict-storage
-
 
 functions:
   post-images:
@@ -38,6 +38,9 @@ functions:
           path: images
           method: post
           cors: true
+          authorizer:
+            arn: arn:aws:cognito-idp:${opt:region}:341255432068:userpool/us-east-1_DICbxy8Oz
+
   update-images:
     handler: src/update-images.handler
     events:
@@ -45,6 +48,9 @@ functions:
           path: images
           method: put
           cors: true
+          authorizer:
+            arn: arn:aws:cognito-idp:${opt:region}:341255432068:userpool/us-east-1_DICbxy8Oz
+
   get-images:
     handler: src/get-images.handler
     events:
@@ -52,6 +58,9 @@ functions:
           path: images
           method: get
           cors: true
+          authorizer:
+            arn: arn:aws:cognito-idp:${opt:region}:341255432068:userpool/us-east-1_DICbxy8Oz
+
   get-image:
     handler: src/get-image.handler
     events:
@@ -59,6 +68,9 @@ functions:
           path: images/{image_id}
           method: get
           cors: true
+          authorizer:
+            arn: arn:aws:cognito-idp:${opt:region}:341255432068:userpool/us-east-1_DICbxy8Oz
+
   delete-image:
     handler: src/delete-image.handler
     events:
@@ -66,6 +78,11 @@ functions:
           path: images/{image_id}
           method: delete
           cors: true
+          authorizer:
+            arn: arn:aws:cognito-idp:${opt:region}:341255432068:userpool/us-east-1_DICbxy8Oz
+
+  recognize-image:
+    handler: src/recognize-image.handler
 
 resources:
   Resources:
@@ -102,3 +119,27 @@ resources:
               AllowedOrigins:
                 - "*"
               MaxAge: 3000
+        NotificationConfiguration:
+          LambdaConfigurations:
+            - Function:
+                Fn::GetAtt:
+                - RecognizeDashimageLambdaFunction
+                - Arn
+              Event: "s3:ObjectCreated:*"
+
+
+    RecognizeImageLambdaPermissionS3:
+      Type: AWS::Lambda::Permission
+      Properties:
+        FunctionName:
+          Fn::GetAtt:
+            - RecognizeDashimageLambdaFunction
+            - Arn
+        Principal: s3.amazonaws.com
+        Action: lambda:InvokeFunction
+        SourceAccount:
+          Ref: AWS::AccountId
+        SourceArn:
+          Fn::GetAtt:
+            - PhotosBucket
+            - Arn
