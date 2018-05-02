@@ -32,7 +32,7 @@ provider:
 
 functions:
   post-images:
-    handler: src/post-images.handler
+    handler: src/post_images.handler
     events:
       - http:
           path: images
@@ -42,7 +42,7 @@ functions:
             arn: arn:aws:cognito-idp:${opt:region}:341255432068:userpool/us-east-1_DICbxy8Oz
 
   update-images:
-    handler: src/update-images.handler
+    handler: src/update_images.handler
     events:
       - http:
           path: images
@@ -52,7 +52,7 @@ functions:
             arn: arn:aws:cognito-idp:${opt:region}:341255432068:userpool/us-east-1_DICbxy8Oz
 
   get-images:
-    handler: src/get-images.handler
+    handler: src/get_images.handler
     events:
       - http:
           path: images
@@ -62,7 +62,7 @@ functions:
             arn: arn:aws:cognito-idp:${opt:region}:341255432068:userpool/us-east-1_DICbxy8Oz
 
   get-image:
-    handler: src/get-image.handler
+    handler: src/get_image.handler
     events:
       - http:
           path: images/{image_id}
@@ -72,7 +72,7 @@ functions:
             arn: arn:aws:cognito-idp:${opt:region}:341255432068:userpool/us-east-1_DICbxy8Oz
 
   delete-image:
-    handler: src/delete-image.handler
+    handler: src/delete_image.handler
     events:
       - http:
           path: images/{image_id}
@@ -82,7 +82,7 @@ functions:
             arn: arn:aws:cognito-idp:${opt:region}:341255432068:userpool/us-east-1_DICbxy8Oz
 
   recognize-image:
-    handler: src/recognize-image.handler
+    handler: src/recognize_image.handler
 
 resources:
   Resources:

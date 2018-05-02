@@ -11,7 +11,8 @@ import jwt
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-dynamodb = boto3.resource('dynamodb', region_name=os.getenv('AWS_DEFAULT_REGION'))
+dynamodb = boto3.resource('dynamodb',
+                          region_name=os.getenv('AWS_DEFAULT_REGION'))
 table = dynamodb.Table(os.getenv('PHOTOS_TABLE_NAME'))
 
 
@@ -21,13 +22,7 @@ def handler(event, context):
     credentials = jwt.decode(event.headers['Authorization'], verify=False)
     user_id = credentials.sub
 
-    ext = body['type'].split('/')[1]
     photo_id = str(uuid.uuid4())
-    url = get_pre_signed_url(
-        os.getenv('PHOTOS_BUCKET'),
-        photo_id + '.' + ext,
-        body['type']
-    )
 
     item = {
         'photo_id': photo_id,
@@ -56,7 +51,6 @@ def handler(event, context):
 
         return response
 
-    item['signed_url'] = url
     response = {
         'statusCode': 200,
         'body': json.dumps(item),
@@ -67,21 +61,3 @@ def handler(event, context):
     }
 
     return response
-
-
-def get_pre_signed_url(bucket, key, type):
-    s3 = boto3.client('s3', region_name=os.getenv('AWS_DEFAULT_REGION'))
-
-    try:
-
-        url = s3.generate_presigned_url(
-            ClientMethod='put_object',
-            Params={'Bucket': bucket, 'Key': key},
-            HttpMethod='PUT',
-            ExpiresIn=3600
-        )
-
-        return url
-
-    except ClientError as e:
-        raise e

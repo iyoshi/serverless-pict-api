@@ -12,7 +12,8 @@ from src.decimalencoder import DecimalEncoder
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-dynamodb = boto3.resource('dynamodb', region_name=os.getenv('AWS_DEFAULT_REGION'))
+dynamodb = boto3.resource('dynamodb',
+                          region_name=os.getenv('AWS_DEFAULT_REGION'))
 table = dynamodb.Table(os.getenv('PHOTOS_TABLE_NAME'))
 
 
@@ -66,7 +67,7 @@ def handler(event, context):
         }
 
     except Exception as err:
-        logger.error('type: {}'.format(type(err)))
+        logger.error('type: %s', type(err))
         logger.error(err)
 
         return {

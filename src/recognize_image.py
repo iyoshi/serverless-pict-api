@@ -6,8 +6,6 @@ from urllib import parse
 
 import boto3
 
-from src.decimalencoder import DecimalEncoder
-
 s3 = boto3.resource('s3')
 rekognition = boto3.client('rekognition')
 dynamodb = boto3.resource('dynamodb')
@@ -19,7 +17,9 @@ logger.setLevel(logging.INFO)
 
 def handler(event, context):
     images_bucket = event['Records'][0]['s3']['bucket']['name']
-    images_key = parse.unquote_plus(event['Records'][0]['s3']['object']['key'], 'utf8')
+    images_key = parse.unquote_plus(
+        event['Records'][0]['s3']['object']['key'],
+        'utf8')
     try:
         labels = rekognition.detect_labels(
             Image={
@@ -41,7 +41,10 @@ def handler(event, context):
             Attributes=['ALL']
         )
 
-        rekognized_labels = { 'Labels': labels['Labels'], 'FaceDetails': faces['FaceDetails'] }
+        rekognized_labels = {
+            'Labels': labels['Labels'],
+            'FaceDetails': faces['FaceDetails']
+        }
         logger.info(json.dumps(rekognized_labels))
 
         photo_id = images_key.split('.')[0]
@@ -51,7 +54,8 @@ def handler(event, context):
             },
             AttributeUpdates={
                 'labels': {
-                    'Value': json.loads(json.dumps(rekognized_labels), parse_float=decimal.Decimal),
+                    'Value': json.loads(json.dumps(rekognized_labels),
+                                        parse_float=decimal.Decimal),
                     'Action': 'PUT'
                 }
             }

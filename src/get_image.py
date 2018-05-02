@@ -10,7 +10,8 @@ from src.decimalencoder import DecimalEncoder
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-dynamodb = boto3.resource('dynamodb', region_name=os.getenv('AWS_DEFAULT_REGION'))
+dynamodb = boto3.resource('dynamodb',
+                          region_name=os.getenv('AWS_DEFAULT_REGION'))
 table = dynamodb.Table(os.getenv('PHOTOS_TABLE_NAME'))
 
 def handler(event, context):
@@ -40,7 +41,7 @@ def handler(event, context):
     photo_id = path_params['image_id']
 
     try:
-        result = table.get_item(Key={ 'photo_id': photo_id })
+        result = table.get_item(Key={'photo_id': photo_id})
 
         if 'Item' not in result:
             return {
@@ -51,8 +52,6 @@ def handler(event, context):
                     'Access-Control-Allow-Origin': '*'
                 }
             }
-
-        table.delete_item(Key={ 'photo_id': photo_id })
 
     except ClientError as err:
         logger.error(err.response['Error']['Code'])
@@ -66,13 +65,28 @@ def handler(event, context):
             }
         }
 
-    logger.info('photo_id = {} is successfully deleted.'.format(photo_id))
+    try:
 
-    return {
-        'statusCode': 200,
-        'body': json.dumps({ 'photo_id': photo_id }),
-        'headers': {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
+        item = result['Item']
+
+        return {
+            'statusCode': 200,
+            'body': json.dumps(item, cls=DecimalEncoder),
+            'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            }
         }
-    }
+
+    except Exception as err:
+        logger.error('type: %s', type(err))
+        logger.error(err)
+
+        return {
+            'statusCode': 500,
+            'body': 'Unexpected error occurred',
+            'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            }
+        }

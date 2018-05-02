@@ -1,21 +1,22 @@
 import json
+import logging
 import os
 
 import boto3
 from botocore.client import ClientError
-import logging
 
 from src.decimalencoder import DecimalEncoder
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-dynamodb = boto3.resource('dynamodb', region_name=os.getenv('AWS_DEFAULT_REGION'))
+dynamodb = boto3.resource('dynamodb',
+                          region_name=os.getenv('AWS_DEFAULT_REGION'))
 table = dynamodb.Table(os.getenv('PHOTOS_TABLE_NAME'))
 
-def validate_request_body(body):
 
-    return body.keys() >= { 'photo_id', 'created_at', 'status' }
+def validate_request_body(body):
+    return body.keys() >= {'photo_id', 'created_at', 'status'}
 
 
 def handler(event, context):
@@ -29,7 +30,6 @@ def handler(event, context):
 
     body = json.loads(event['body'])
     if not validate_request_body(body):
-
         logger.error("Validation Failed")
 
         return {
@@ -88,7 +88,7 @@ def handler(event, context):
         }
 
     except Exception as err:
-        logger.error('type: {}'.format(type(err)))
+        logger.error('type: %s', type(err))
 
         return {
             'statusCode': 500,
