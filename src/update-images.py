@@ -41,7 +41,7 @@ def handler(event, context):
             }
         }
 
-    photo_id = body['image_id']
+    photo_id = body['photo_id']
     status = body['status']
 
     try:
@@ -93,6 +93,8 @@ def handler(event, context):
         return {
             'statusCode': 500,
             'body': 'Unexpected error occurred',
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
+            'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            }
         }

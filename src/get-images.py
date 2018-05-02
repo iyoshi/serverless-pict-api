@@ -3,8 +3,9 @@ import logging
 import os
 
 import boto3
-from boto3.dynamodb.conditions import Attr
+from boto3.dynamodb.conditions import Attr, Key
 from botocore.client import ClientError
+import jwt
 
 from src.decimalencoder import DecimalEncoder
 
@@ -24,8 +25,19 @@ def handler(event, context):
     :return: TBD
     """
 
+    credentials = jwt.decode(event.headers['Authorization'], verify=False)
+    user_id = credentials.sub
+
     try:
-        result = table.scan(FilterExpression=Attr('status').eq('uploaded'))
+        result = table.query(
+            IndexName='user_id-index',
+            Select='ALL_ATTRIBUTES',
+            Limit=100,
+            ConsistentRead=False,
+            KeyConditionExpression=Key('user_id').eq(user_id),
+            FilterExpression=Attr('status').eq('uploaded')
+
+        )
 
     except ClientError as err:
         logger.error(err.response['Error']['Code'])
