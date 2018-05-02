@@ -93,12 +93,25 @@ resources:
         AttributeDefinitions:
           - AttributeName: photo_id
             AttributeType: S
+          - AttributeName: user_id
+            AttributeType: S
         KeySchema:
           - AttributeName: photo_id
             KeyType: HASH
         ProvisionedThroughput:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1
+        GlobalSecondaryIndexes:
+          - IndexName: user_id-index
+            KeySchema:
+              - AttributeName: user_id
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+            ProvisionedThroughput:
+              ReadCapacityUnits: 1
+              WriteCapacityUnits: 1
+
         TableName: Photos
 
     PhotosBucket:
