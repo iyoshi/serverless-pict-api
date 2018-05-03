@@ -12,10 +12,6 @@ from src.decimalencoder import DecimalEncoder
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-dynamodb = boto3.resource('dynamodb',
-                          region_name=os.getenv('AWS_DEFAULT_REGION'))
-table = dynamodb.Table(os.getenv('PHOTOS_TABLE_NAME'))
-
 
 def handler(event, context):
     """
@@ -26,18 +22,20 @@ def handler(event, context):
     :return: TBD
     """
 
-    credentials = jwt.decode(event.headers['Authorization'], verify=False)
-    user_id = credentials.sub
+    access_token = event['headers']['Authorization']
+    credentials = jwt.decode(access_token, verify=False)
+    user_id = credentials['sub']
 
+    dynamodb = boto3.resource('dynamodb',
+                              region_name=os.getenv('AWS_DEFAULT_REGION'))
+    table = dynamodb.Table(os.getenv('PHOTOS_TABLE_NAME', 'photos'))
     try:
         result = table.query(
             IndexName='user_id-index',
-            Select='ALL_ATTRIBUTES',
             Limit=100,
             ConsistentRead=False,
             KeyConditionExpression=Key('user_id').eq(user_id),
             FilterExpression=Attr('status').eq('uploaded')
-
         )
 
     except ClientError as err:

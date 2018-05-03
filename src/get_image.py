@@ -10,9 +10,6 @@ from src.decimalencoder import DecimalEncoder
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-dynamodb = boto3.resource('dynamodb',
-                          region_name=os.getenv('AWS_DEFAULT_REGION'))
-table = dynamodb.Table(os.getenv('PHOTOS_TABLE_NAME'))
 
 def handler(event, context):
     """
@@ -26,7 +23,6 @@ def handler(event, context):
     path_params = event['pathParameters']
 
     if 'image_id' not in path_params:
-
         logger.error("Validation Failed")
 
         return {
@@ -39,7 +35,9 @@ def handler(event, context):
         }
 
     photo_id = path_params['image_id']
-
+    dynamodb = boto3.resource('dynamodb',
+                              region_name=os.getenv('AWS_DEFAULT_REGION'))
+    table = dynamodb.Table(os.getenv('PHOTOS_TABLE_NAME', 'photos'))
     try:
         result = table.get_item(Key={'photo_id': photo_id})
 

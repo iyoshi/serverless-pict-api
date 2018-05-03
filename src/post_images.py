@@ -11,16 +11,12 @@ import jwt
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-dynamodb = boto3.resource('dynamodb',
-                          region_name=os.getenv('AWS_DEFAULT_REGION'))
-table = dynamodb.Table(os.getenv('PHOTOS_TABLE_NAME'))
-
 
 def handler(event, context):
 
     body = json.loads(event['body'])
-    credentials = jwt.decode(event.headers['Authorization'], verify=False)
-    user_id = credentials.sub
+    credentials = jwt.decode(event['headers']['Authorization'], verify=False)
+    user_id = credentials['sub']
 
     photo_id = str(uuid.uuid4())
 
@@ -34,6 +30,9 @@ def handler(event, context):
         'version': 1
     }
 
+    dynamodb = boto3.resource('dynamodb',
+                              region_name=os.getenv('AWS_DEFAULT_REGION'))
+    table = dynamodb.Table(os.getenv('PHOTOS_TABLE_NAME', 'photos'))
     try:
         table.put_item(Item=item)
 

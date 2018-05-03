@@ -10,13 +10,9 @@ from src.decimalencoder import DecimalEncoder
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-dynamodb = boto3.resource('dynamodb',
-                          region_name=os.getenv('AWS_DEFAULT_REGION'))
-table = dynamodb.Table(os.getenv('PHOTOS_TABLE_NAME'))
-
 
 def validate_request_body(body):
-    return body.keys() >= {'photo_id', 'created_at', 'status'}
+    return body.keys() >= {'photo_id', 'status'}
 
 
 def handler(event, context):
@@ -44,6 +40,9 @@ def handler(event, context):
     photo_id = body['photo_id']
     status = body['status']
 
+    dynamodb = boto3.resource('dynamodb',
+                              region_name=os.getenv('AWS_DEFAULT_REGION'))
+    table = dynamodb.Table(os.getenv('PHOTOS_TABLE_NAME', 'photos'))
     try:
         table.update_item(
             Key={
