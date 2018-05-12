@@ -100,3 +100,7 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+# Serverless directories
+.serverless
+node_modules
