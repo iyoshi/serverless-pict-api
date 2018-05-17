@@ -8,8 +8,8 @@
   },
   "scripts": {
     "setup": "npm install && pipenv install",
-    "lint": "flake8 ./src/ && pylint ./src/",
-    "test": "pytest",
+    "lint": "pipenv run flake8 ./src/ && pipenv run pylint ./src/",
+    "test": "pipenv run pytest",
     "deploy": "serverless deploy"
   }
 }
