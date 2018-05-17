@@ -85,5 +85,6 @@ class TestGetImages(unittest.TestCase):
                     'user_id': 'user_id',
                     'status': 'uploaded'
                 }
-            ]}
+            ]},
+            sort_keys=True
         ))

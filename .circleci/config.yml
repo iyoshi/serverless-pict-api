@@ -1,0 +1,78 @@
+version: 2
+jobs:
+  build:
+    working_directory: ~/repo
+    docker:
+      - image: ey0621/serverless-python3:latest
+    environment:
+      AWS_REGION: us-east-1
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - dependency-node-{{ checksum "package.json" }}
+            # if cache for exact version of `package.json` is not present then load any most recent one
+            - dependency-node-
+      - run: npm run setup -- --dev
+      - save_cache:
+          key: dependency-node-{{ checksum "package.json" }}
+          paths:
+            - ./node_modules
+      - run: npm run lint
+
+  unit-tests:
+    working_directory: ~/repo
+    docker:
+      - image: ey0621/serverless-python3:latest
+      - image: deangiberson/aws-dynamodb-local:latest
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - dependency-node-{{ checksum "package.json" }}
+            # if cache for exact version of `package.json` is not present then load any most recent one
+            - dependency-node-
+      - run: npm run setup -- --dev
+      - save_cache:
+          key: dependency-node-{{ checksum "package.json" }}
+          paths:
+            - ./node_modules
+      - run: npm run test
+
+  deploy:
+    working_directory: ~/repo
+    docker:
+      - image: ey0621/serverless-python3:latest
+    environment:
+      AWS_REGION: us-west-2
+      STAGE: production
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - dependency-node-{{ checksum "package.json" }}
+            # if cache for exact version of `package.json` is not present then load any most recent one
+            - dependency-node-
+      - run: npm run setup
+      - save_cache:
+          key: dependency-node-{{ checksum "package.json" }}
+          paths:
+            - ./node_modules
+      - run:
+          name: Deploy
+          command: npm run deploy -- -s $STAGE -r $AWS_REGION
+
+workflows:
+  version: 2
+  build-test-deploy:
+    jobs:
+      - build
+      - unit-tests
+      - deploy:
+          requires:
+            - build
+            - unit-tests
+          filters:
+            branches:
+              only:
+                - master
