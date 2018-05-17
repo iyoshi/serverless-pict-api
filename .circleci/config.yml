@@ -60,7 +60,9 @@ jobs:
             - ./node_modules
       - run:
           name: Deploy
-          command: npm run deploy -- -s $STAGE -r $AWS_REGION
+          command: |
+            AWS_ACCOUNT_ID=`aws sts get-caller-identity --query 'Account' --output text`
+            npm run deploy -- -s $STAGE -r $AWS_REGION --accountId ${AWS_ACCOUNT_ID}
 
 workflows:
   version: 2

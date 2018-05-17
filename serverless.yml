@@ -3,6 +3,7 @@
 # optional parameters
 #   - region
 #   - stage
+#   - accountId
 #
 
 service: serverless-pict-api
@@ -39,7 +40,7 @@ functions:
           method: post
           cors: true
           authorizer:
-            arn: arn:aws:cognito-idp:${opt:region}:341255432068:userpool/us-east-1_DICbxy8Oz
+            arn: arn:aws:cognito-idp:${opt:region}:${opt:accountId}:userpool/us-east-1_DICbxy8Oz
 
   update-images:
     handler: src/update_images.handler
@@ -49,7 +50,7 @@ functions:
           method: put
           cors: true
           authorizer:
-            arn: arn:aws:cognito-idp:${opt:region}:341255432068:userpool/us-east-1_DICbxy8Oz
+            arn: arn:aws:cognito-idp:${opt:region}:${opt:accountId}:userpool/us-east-1_DICbxy8Oz
 
   get-images:
     handler: src/get_images.handler
@@ -59,7 +60,7 @@ functions:
           method: get
           cors: true
           authorizer:
-            arn: arn:aws:cognito-idp:${opt:region}:341255432068:userpool/us-east-1_DICbxy8Oz
+            arn: arn:aws:cognito-idp:${opt:region}:${opt:accountId}:userpool/us-east-1_DICbxy8Oz
 
   get-image:
     handler: src/get_image.handler
@@ -69,7 +70,7 @@ functions:
           method: get
           cors: true
           authorizer:
-            arn: arn:aws:cognito-idp:${opt:region}:341255432068:userpool/us-east-1_DICbxy8Oz
+            arn: arn:aws:cognito-idp:${opt:region}:${opt:accountId}:userpool/us-east-1_DICbxy8Oz
 
   delete-image:
     handler: src/delete_image.handler
@@ -79,7 +80,7 @@ functions:
           method: delete
           cors: true
           authorizer:
-            arn: arn:aws:cognito-idp:${opt:region}:341255432068:userpool/us-east-1_DICbxy8Oz
+            arn: arn:aws:cognito-idp:${opt:region}:${opt:accountId}:userpool/us-east-1_DICbxy8Oz
 
   recognize-image:
     handler: src/recognize_image.handler
