@@ -1,13 +1,14 @@
 import datetime
 import json
 import logging
-import os
 import uuid
 
-import boto3
-from botocore.client import ClientError
+from pynamodb.exceptions import PutError, GetError
 import jwt
 
+from src.models.images import Images
+
+# TODO: use logger class
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
@@ -18,45 +19,46 @@ def handler(event, context):
     credentials = jwt.decode(event['headers']['Authorization'], verify=False)
     user_id = credentials['sub']
 
-    photo_id = str(uuid.uuid4())
+    image_id = str(uuid.uuid4())
 
-    item = {
-        'photo_id': photo_id,
-        'user_id': user_id,
-        'created_at': int(datetime.datetime.utcnow().timestamp()),
-        'status': 'waiting',
-        'type': body['type'],
-        'size': body['size'],
-        'version': 1
-    }
+    image = Images(image_id)
+    image.user_id = user_id
+    image.status = 'waiting'
+    image.type = body['type']
+    image.size = body['size']
+    image.created_at = int(datetime.datetime.utcnow().timestamp())
 
-    dynamodb = boto3.resource('dynamodb',
-                              region_name=os.getenv('AWS_DEFAULT_REGION'))
-    table = dynamodb.Table(os.getenv('PHOTOS_TABLE_NAME', 'photos'))
+    entity: Images = None
     try:
-        table.put_item(Item=item)
+        image.save()
+        entity = image.get(image_id)
 
-    except ClientError as err:
-        logger.error(err.response['Error']['Code'])
+    except (PutError, GetError) as err:
 
-        response = {
-            'statusCode': 400,
-            'body': err.response['Error']['Code'],
+        return {
+            'statusCode': 500,
+            'body': err.msg,
             'headers': {
                 'Content-Type': 'application/json',
                 'Access-Control-Allow-Origin': '*'
             }
         }
 
-        return response
+    response_body = {
+        'image_id': entity.image_id,
+        'user_id': entity.user_id,
+        'status': entity.status,
+        'type': entity.type,
+        'size': entity.size,
+        'created_at': entity.created_at,
+        'version': entity.version
+    }
 
-    response = {
+    return {
         'statusCode': 200,
-        'body': json.dumps(item),
+        'body': json.dumps(response_body),
         'headers': {
             'Content-Type': 'application/json',
             'Access-Control-Allow-Origin': '*'
         }
     }
-
-    return response

@@ -1,11 +1,10 @@
 import json
 import logging
-import os
 
-import boto3
-from botocore.client import ClientError
+from pynamodb.exceptions import DoesNotExist, GetError
 
 from src.decimalencoder import DecimalEncoder
+from src.models.images import Images
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -34,29 +33,27 @@ def handler(event, context):
             }
         }
 
-    photo_id = path_params['image_id']
-    dynamodb = boto3.resource('dynamodb',
-                              region_name=os.getenv('AWS_DEFAULT_REGION'))
-    table = dynamodb.Table(os.getenv('PHOTOS_TABLE_NAME', 'photos'))
+    image_id = path_params['image_id']
+    image: Images = None
     try:
-        result = table.get_item(Key={'photo_id': photo_id})
+        image = Images.get(hash_key=image_id, consistent_read=True)
 
-        if 'Item' not in result:
-            return {
-                'statusCode': 404,
-                'body': 'Resource not found',
-                'headers': {
-                    'Content-Type': 'application/json',
-                    'Access-Control-Allow-Origin': '*'
-                }
+    except DoesNotExist as err:
+
+        return {
+            'statusCode': 404,
+            'body': err.msg,
+            'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
             }
+        }
 
-    except ClientError as err:
-        logger.error(err.response['Error']['Code'])
+    except GetError as err:
 
         return {
             'statusCode': 500,
-            'body': err.response['Error']['Code'],
+            'body': err.msg,
             'headers': {
                 'Content-Type': 'application/json',
                 'Access-Control-Allow-Origin': '*'
@@ -65,11 +62,18 @@ def handler(event, context):
 
     try:
 
-        item = result['Item']
+        response_body = {
+            'image_id': image.image_id,
+            'status': image.status,
+            'type': image.type,
+            'size': image.size,
+            'created_at': image.created_at,
+            'version': image.version
+        }
 
         return {
             'statusCode': 200,
-            'body': json.dumps(item, cls=DecimalEncoder),
+            'body': json.dumps(response_body, cls=DecimalEncoder),
             'headers': {
                 'Content-Type': 'application/json',
                 'Access-Control-Allow-Origin': '*'
@@ -77,8 +81,6 @@ def handler(event, context):
         }
 
     except Exception as err:
-        logger.error('type: %s', type(err))
-        logger.error(err)
 
         return {
             'statusCode': 500,

@@ -1,55 +1,37 @@
+import json
 import unittest
 from unittest import mock
 
 import jwt
 
 from src import post_images
-from tests.testing.dynamodb_testing_util import DynamoDbTestingUtil
+from src.models.images import Images
 
-dynamodb_local = DynamoDbTestingUtil.create_dynamodb_local_resource()
+images_local = Images()
+images_local.Meta.host = 'http://localhost:8000'
 
 
 class TestPostImages(unittest.TestCase):
 
     def setUp(self):
-        dynamodb_local.create_table(
-            AttributeDefinitions=[
-                {
-                    'AttributeName': 'photo_id',
-                    'AttributeType': 'S'
-                }
-            ],
-            TableName='photos',
-            KeySchema=[
-                {
-                    'AttributeName': 'photo_id',
-                    'KeyType': 'HASH'
-                },
-            ],
-            ProvisionedThroughput={
-                'ReadCapacityUnits': 1,
-                'WriteCapacityUnits': 1
-            },
-        )
+        images_local.create_table(True, read_capacity_units=1, write_capacity_units=1)
 
     def tearDown(self):
-        DynamoDbTestingUtil.delete_table('photos')
+        images_local.delete_table()
 
-    @mock.patch('boto3.resource')
+    @mock.patch('src.models.images')
     def test_handler_ok(self, mock_resource):
-        table = dynamodb_local.Table('photos')
-        table.put_item(Item={
-            'photo_id': 'photo_id'
-        })
-
-        mock_resource.return_value = dynamodb_local
+        mock_resource.return_value = images_local
 
         access_token = jwt.encode({'sub': 'user_id'}, 'secret')
-        event = {
-            'body': "{\"type\": \"img/jpeg\", \"size\": 1}",
-            'headers': {
-                'Authorization': access_token
-            }
-        }
+        event = dict(
+            body=json.dumps({"type": "img/jpeg", "size": 1}),
+            headers={'Authorization': access_token}
+        )
         actual = post_images.handler(event, None)
         self.assertEqual(actual['statusCode'], 200)
+        actual_body = json.loads(actual['body'])
+        self.assertIsNotNone(actual_body['image_id'])
+        self.assertEqual(actual_body['status'], 'waiting')
+        self.assertEqual(actual_body['type'], 'img/jpeg')
+        self.assertEqual(actual_body['size'], 1)

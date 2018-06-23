@@ -1,9 +1,8 @@
 import json
 import logging
-import os
 
-import boto3
-from botocore.client import ClientError
+from pynamodb.exceptions import DoesNotExist, DeleteError
+from src.models.images import Images
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -32,43 +31,36 @@ def handler(event, context):
             }
         }
 
-    photo_id = path_params['image_id']
-
-    dynamodb = boto3.resource('dynamodb',
-                              region_name=os.getenv('AWS_DEFAULT_REGION'))
-    table = dynamodb.Table(os.getenv('PHOTOS_TABLE_NAME', 'photos'))
+    image_id = path_params['image_id']
     try:
-        result = table.get_item(Key={'photo_id': photo_id})
+        image = Images.get(hash_key=image_id)
+        image.delete()
 
-        if 'Item' not in result:
-            return {
-                'statusCode': 404,
-                'body': 'Resource not found',
-                'headers': {
-                    'Content-Type': 'application/json',
-                    'Access-Control-Allow-Origin': '*'
-                }
-            }
-
-        table.delete_item(Key={'photo_id': photo_id})
-
-    except ClientError as err:
-        logger.error(err.response['Error']['Code'])
-
+    except DoesNotExist as err:
         return {
-            'statusCode': 500,
-            'body': err.response['Error']['Code'],
+            'statusCode': 404,
+            'body': err.msg,
             'headers': {
                 'Content-Type': 'application/json',
                 'Access-Control-Allow-Origin': '*'
             }
         }
 
-    logger.info('photo_id = %s is successfully deleted.', photo_id)
+    except DeleteError as err:
+        return {
+            'statusCode': 500,
+            'body': err.msg,
+            'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            }
+        }
+
+    logger.info('photo_id = %s is successfully deleted.', image_id)
 
     return {
         'statusCode': 200,
-        'body': json.dumps({'photo_id': photo_id}),
+        'body': json.dumps({'image_id': image_id}),
         'headers': {
             'Content-Type': 'application/json',
             'Access-Control-Allow-Origin': '*'

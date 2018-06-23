@@ -91,29 +91,28 @@ resources:
     PhotosTable:
       Type: AWS::DynamoDB::Table
       Properties:
+        TableName: Images
         AttributeDefinitions:
-          - AttributeName: photo_id
+          - AttributeName: ImageID
             AttributeType: S
-          - AttributeName: user_id
+          - AttributeName: UserID
             AttributeType: S
         KeySchema:
-          - AttributeName: photo_id
+          - AttributeName: ImageID
             KeyType: HASH
         ProvisionedThroughput:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1
         GlobalSecondaryIndexes:
-          - IndexName: user_id-index
+          - IndexName: UserID-index
             KeySchema:
-              - AttributeName: user_id
+              - AttributeName: UserID
                 KeyType: HASH
             Projection:
               ProjectionType: ALL
             ProvisionedThroughput:
               ReadCapacityUnits: 1
               WriteCapacityUnits: 1
-
-        TableName: Photos
 
     PhotosBucket:
       Type: AWS::S3::Bucket

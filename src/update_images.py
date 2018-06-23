@@ -1,18 +1,16 @@
 import json
 import logging
-import os
-
-import boto3
-from botocore.client import ClientError
+from pynamodb.exceptions import UpdateError, GetError
 
 from src.decimalencoder import DecimalEncoder
+from src.models.images import Images
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
 def validate_request_body(body):
-    return body.keys() >= {'photo_id', 'status'}
+    return body.keys() >= {'image_id', 'status'}
 
 
 def handler(event, context):
@@ -37,37 +35,18 @@ def handler(event, context):
             }
         }
 
-    photo_id = body['photo_id']
+    image_id = body['image_id']
     status = body['status']
 
-    dynamodb = boto3.resource('dynamodb',
-                              region_name=os.getenv('AWS_DEFAULT_REGION'))
-    table = dynamodb.Table(os.getenv('PHOTOS_TABLE_NAME', 'photos'))
+    image: Images = None
     try:
-        table.update_item(
-            Key={
-                'photo_id': photo_id
-            },
-            AttributeUpdates={
-                'status': {
-                    'Value': status,
-                    'Action': 'PUT'
-                }
-            }
-        )
+        Images(image_id).update({'status': {'value': status, 'action': 'PUT'}})
+        image = Images.get(image_id)
 
-        result = table.get_item(
-            Key={
-                'photo_id': photo_id
-            }
-        )
-
-    except ClientError as err:
-        logger.error(err.response['Error']['Code'])
-
+    except (UpdateError, GetError) as err:
         return {
             'statusCode': 500,
-            'body': err.response['Error']['Code'],
+            'body': err.msg,
             'headers': {
                 'Content-Type': 'application/json',
                 'Access-Control-Allow-Origin': '*'
@@ -75,11 +54,18 @@ def handler(event, context):
         }
 
     try:
-        response_body = json.dumps(result['Item'], cls=DecimalEncoder)
+        response_body = {
+            'image_id': image.image_id,
+            'status': image.status,
+            'type': image.type,
+            'size': image.size,
+            'created_at': image.created_at,
+            'version': image.version
+        }
 
         return {
             'statusCode': 200,
-            'body': response_body,
+            'body': json.dumps(response_body, cls=DecimalEncoder),
             'headers': {
                 'Content-Type': 'application/json',
                 'Access-Control-Allow-Origin': '*'
