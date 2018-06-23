@@ -28,8 +28,11 @@ provider:
         - "rekognition:*"
       Resource: "*"
   environment:
-      PHOTOS_TABLE_NAME: Photos
-      PHOTOS_BUCKET: serverless-pict-storage
+      PHOTOS_TABLE_NAME:
+        Ref: ImagesTable
+      PHOTOS_BUCKET:
+        Ref: ImagesBucket
+  deploymentBucket: serverless.artifacts.${opt:accountId}.${opt:region, 'us-east-1'}
 
 functions:
   post-images:
@@ -88,7 +91,7 @@ functions:
 resources:
   Resources:
 
-    PhotosTable:
+    ImagesTable:
       Type: AWS::DynamoDB::Table
       Properties:
         TableName: Images
@@ -114,7 +117,7 @@ resources:
               ReadCapacityUnits: 1
               WriteCapacityUnits: 1
 
-    PhotosBucket:
+    ImagesBucket:
       Type: AWS::S3::Bucket
       Properties:
         BucketName: serverless-pict-storage
@@ -154,5 +157,5 @@ resources:
           Ref: AWS::AccountId
         SourceArn:
           Fn::GetAtt:
-            - PhotosBucket
+            - ImagesBucket
             - Arn
