@@ -107,7 +107,7 @@ resources:
     ImagesTable:
       Type: AWS::DynamoDB::Table
       Properties:
-        TableName: ${self:custom.dynamoDBPrefix.${opt:stage, 'dev'}, custom.dynamoDBPrefix.development}Images
+        TableName: ${self:custom.dynamoDBPrefix.${opt:stage, 'dev'}, 'Development_'}Images
         AttributeDefinitions:
           - AttributeName: ImageID
             AttributeType: S
@@ -133,7 +133,7 @@ resources:
     ImagesBucket:
       Type: AWS::S3::Bucket
       Properties:
-        BucketName: serverless-pict-storage
+        BucketName: stored-images-${opt:stage, 'development'}-${opt:region, 'us-east-1'}-${opt:accountId}
         WebsiteConfiguration:
           IndexDocument: index.html
         CorsConfiguration:
