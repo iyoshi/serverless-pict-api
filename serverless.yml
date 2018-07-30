@@ -85,6 +85,14 @@ functions:
           authorizer:
             arn: arn:aws:cognito-idp:${opt:region}:${opt:accountId}:userpool/us-east-1_DICbxy8Oz
 
+  get-version:
+    handler: src/get_version.handler
+    events:
+      - http:
+          path: version
+          method: get
+          cors: true
+
   recognize-image:
     handler: src/recognize_image.handler
 
