@@ -34,6 +34,11 @@ provider:
         Ref: ImagesBucket
   deploymentBucket: serverless.artifacts.${opt:accountId}.${opt:region, 'us-east-1'}
 
+custom:
+  dynamoDBPrefix:
+    development: "Development_"
+    production: ""
+
 functions:
   post-images:
     handler: src/post_images.handler
@@ -102,7 +107,7 @@ resources:
     ImagesTable:
       Type: AWS::DynamoDB::Table
       Properties:
-        TableName: Images
+        TableName: ${self:custom.dynamoDBPrefix.${opt:stage, 'dev'}, custom.dynamoDBPrefix.development}Images
         AttributeDefinitions:
           - AttributeName: ImageID
             AttributeType: S
@@ -150,7 +155,6 @@ resources:
                 - RecognizeDashimageLambdaFunction
                 - Arn
               Event: "s3:ObjectCreated:*"
-
 
     RecognizeImageLambdaPermissionS3:
       Type: AWS::Lambda::Permission
