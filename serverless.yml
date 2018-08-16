@@ -133,26 +133,26 @@ resources:
               AllowedOrigins:
                 - "*"
               MaxAge: 3000
-        NotificationConfiguration:
-          LambdaConfigurations:
-            - Function:
-                Fn::GetAtt:
-                - RecognizeDashimageLambdaFunction
-                - Arn
-              Event: "s3:ObjectCreated:*"
-
-    RecognizeImageLambdaPermissionS3:
-      Type: AWS::Lambda::Permission
-      Properties:
-        FunctionName:
-          Fn::GetAtt:
-            - RecognizeDashimageLambdaFunction
-            - Arn
-        Principal: s3.amazonaws.com
-        Action: lambda:InvokeFunction
-        SourceAccount:
-          Ref: AWS::AccountId
-        SourceArn:
-          Fn::GetAtt:
-            - ImagesBucket
-            - Arn
+#        NotificationConfiguration:
+#          LambdaConfigurations:
+#            - Function:
+#                Fn::GetAtt:
+#                - RecognizeDashimageLambdaFunction
+#                - Arn
+#              Event: "s3:ObjectCreated:*"
+#
+#    RecognizeImageLambdaPermissionS3:
+#      Type: AWS::Lambda::Permission
+#      Properties:
+#        FunctionName:
+#          Fn::GetAtt:
+#            - RecognizeDashimageLambdaFunction
+#            - Arn
+#        Principal: s3.amazonaws.com
+#        Action: lambda:InvokeFunction
+#        SourceAccount:
+#          Ref: AWS::AccountId
+#        SourceArn:
+#          Fn::GetAtt:
+#            - ImagesBucket
+#            - Arn
