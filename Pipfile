@@ -8,6 +8,7 @@ name = "pypi"
 "botocore" = "*"
 "PyJWT" = "*"
 "pynamodb" = "*"
+"flask" = "*"
 
 [dev-packages]
 "pylint" = "*"
