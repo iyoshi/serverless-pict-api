@@ -11,6 +11,7 @@ frameworkVersion: "^1.26.1"
 
 plugins:
   - serverless-python-requirements
+  - serverless-wsgi
 
 provider:
   name: aws
@@ -28,7 +29,7 @@ provider:
         - "rekognition:*"
       Resource: "*"
   environment:
-      PHOTOS_TABLE_NAME:
+      IMAGES_TABLE_NAME:
         Ref: ImagesTable
       PHOTOS_BUCKET:
         Ref: ImagesBucket
@@ -36,67 +37,51 @@ provider:
 
 custom:
   dynamoDBPrefix:
+    idevelopment: "Development_"
     development: "Development_"
     production: ""
 
+  wsgi:
+    app: src/api.app
+
 functions:
-  post-images:
-    handler: src/post_images.handler
+  api:
+    handler: wsgi.handler
     events:
       - http:
-          path: images
+          path: /version
+          method: get
+          cors: true
+      - http:
+          path: /images
           method: post
           cors: true
           authorizer:
             arn: arn:aws:cognito-idp:${opt:region}:${opt:accountId}:userpool/us-east-1_DICbxy8Oz
-
-  update-images:
-    handler: src/update_images.handler
-    events:
       - http:
-          path: images
+          path: /images
+          method: get
+          cors: true
+          authorizer:
+            arn: arn:aws:cognito-idp:${opt:region}:${opt:accountId}:userpool/us-east-1_DICbxy8Oz
+      - http:
+          path: /images/{image_id}
+          method: get
+          cors: true
+          authorizer:
+            arn: arn:aws:cognito-idp:${opt:region}:${opt:accountId}:userpool/us-east-1_DICbxy8Oz
+      - http:
+          path: /images
           method: put
           cors: true
           authorizer:
             arn: arn:aws:cognito-idp:${opt:region}:${opt:accountId}:userpool/us-east-1_DICbxy8Oz
-
-  get-images:
-    handler: src/get_images.handler
-    events:
       - http:
-          path: images
-          method: get
-          cors: true
-          authorizer:
-            arn: arn:aws:cognito-idp:${opt:region}:${opt:accountId}:userpool/us-east-1_DICbxy8Oz
-
-  get-image:
-    handler: src/get_image.handler
-    events:
-      - http:
-          path: images/{image_id}
-          method: get
-          cors: true
-          authorizer:
-            arn: arn:aws:cognito-idp:${opt:region}:${opt:accountId}:userpool/us-east-1_DICbxy8Oz
-
-  delete-image:
-    handler: src/delete_image.handler
-    events:
-      - http:
-          path: images/{image_id}
+          path: /images/{image_id}
           method: delete
           cors: true
           authorizer:
             arn: arn:aws:cognito-idp:${opt:region}:${opt:accountId}:userpool/us-east-1_DICbxy8Oz
-
-  get-version:
-    handler: src/get_version.handler
-    events:
-      - http:
-          path: version
-          method: get
-          cors: true
 
   recognize-image:
     handler: src/recognize_image.handler
