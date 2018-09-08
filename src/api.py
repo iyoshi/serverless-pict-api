@@ -1,18 +1,20 @@
-import datetime
 import json
 import logging
 import uuid
+from typing import List
 
 import jwt
 from flask import Flask, jsonify, request
-from pynamodb.exceptions import DoesNotExist, DeleteError, GetError, PutError, QueryError, UpdateError
 
+from src.daos.imagesdao import ImagesDao
+from src.exceptions.apierror import ApiError
 from src.models.images import Images
 
 app = Flask(__name__)
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
 
 def validate_request_body(body):
     return body.keys() >= {'image_id', 'status'}
@@ -35,28 +37,31 @@ def post_images():
 
     body = request.json
 
-    image_id = str(uuid.uuid4())
+    image_model = Images()
+    image_model.image_id = str(uuid.uuid4())
+    image_model.user_id = user_id
+    image_model.status = 'waiting'
+    image_model.type = body.get('type')
+    image_model.size = body.get('size')
 
-    image = Images(image_id)
-    image.user_id = user_id
-    image.status = 'waiting'
-    image.type = body.get('type')
-    image.size = body.get('size')
-    image.created_at = int(datetime.datetime.utcnow().timestamp())
-
-    entity: Images = None
+    images_dao = ImagesDao()
     try:
-        image.save()
-        entity = image.get(image_id)
+        created_model = images_dao.create(image_model)
+        response_body = dict(image_id=created_model.image_id, status=created_model.status, tyoe=created_model.type,
+                             size=created_model.size, created_at=created_model.created_at,
+                             version=created_model.version)
 
-    except (PutError, GetError) as err:
+        return jsonify(response_body), 200
 
-        return jsonify(err.msg), 500
+    except ApiError as err:
+        response_body = dict(code=err.error_body.code, message=err.error_body.message)
+        return jsonify(response_body), int(err.status_code)
 
-    response_body = dict(image_id=entity.image_id, user_id=entity.user_id, status=entity.status, type=entity.type,
-                         size=entity.size, created_at=entity.created_at, version=entity.version)
+    except Exception as err:
+        logger.error('Catching Internal Server Error', err)
 
-    return jsonify(response_body), 200
+        response_body = dict(code='internal_server_error', message=err.message)
+        return jsonify(response_body), 500
 
 
 @app.route('/images', methods=['GET'])
@@ -66,108 +71,116 @@ def get_images():
     user_id = credentials['sub']
 
     try:
-        images: [Images] = Images.user_id_index.query(
-            user_id,
-            limit=100,
-            consistent_read=False,
-            filter_condition=(Images.status == 'uploaded'))
+        images: List[Images] = ImagesDao().find_all_with_user_id(user_id)
+        filtered_images = [dict(image_id=image.image_id, status=image.status, type=image.type, size=image.size,
+                                created_at=image.created_at,
+                                version=image.version) for image in images if image.status == 'upload']
 
-    except QueryError as err:
-
-        return jsonify(err.msg), 500
-
-    try:
-        items = [dict(image_id=e.image_id, status=e.status, type=e.type, size=e.size, created_at=e.created_at,
-                      version=e.version) for e in images]
-        response_body = dict(images=items)
+        response_body = dict(images=filtered_images)
 
         return jsonify(response_body), 200
 
-    except Exception as err:
-        logger.error('type: %s', type(err))
-        logger.error(err)
+    except ApiError as e:
+        response_body = dict(code=e.error_body.code, message=e.error_body.message)
+        return jsonify(response_body), int(e.status_code)
 
-        return jsonify('Unexpected error occurred'), 500
+
+    except Exception as err:
+        logger.error('Catching Internal Server Error', err)
+
+        response_body = dict(code='internal_server_error', message=err.msg)
+        return jsonify(response_body), 500
 
 
 @app.route('/images/<image_id>', methods=['GET'])
 def get_image(image_id: str):
     if image_id is None:
-        return jsonify('Required params is invalid'), 400
+        response_body = dict(code='invalid_parameter', message='"image_id" is required.')
 
-    image: Images = None
-    try:
-        image = Images.get(hash_key=image_id, consistent_read=True)
-
-    except DoesNotExist as err:
-
-        return jsonify(err.msg), 404
-
-    except GetError as err:
-
-        return jsonify(err.msg), 500
+        return jsonify(response_body), 400
 
     try:
-        response_body = dict(image_id=image.image_id, status=image.status, type=image.type, size=image.size,
-                             created_at=image.created_at, version=image.version)
+        image = ImagesDao().find(image_id)
+
+        if image is None:
+            response_body = dict(code='resource_not_found', message='Images was not found.')
+            return jsonify(response_body), 404
+
+        response_body = {'image_id': image.image_id, 'status': image.status, 'type': image.type, 'size': image.size,
+                         'created_at': image.created_at, 'version': image.version}
 
         return jsonify(response_body), 200
 
-    except Exception as err:
+    except ApiError as e:
+        response_body = dict(code=e.error_body.code, message=e.error_body.message)
+        return jsonify(response_body), int(e.status_code)
 
-        return jsonify('Unexpected error occurred'), 500
+    except Exception as err:
+        app.logger.error('Catching Internal Server Error', str(err))
+
+        response_body = {'code': 'internal_server_error', 'message': str(err)}
+        return jsonify(response_body), 500
 
 
 @app.route('/images', methods=['PUT'])
 def update_image():
     body = request.json
     if not validate_request_body(body):
-        logger.error("Validation Failed")
+        response_body = dict(code='invalid_parameter', message='Request body is invalid.')
 
-        return jsonify('Required params is invalid'), 400
+        return jsonify(response_body), 400
 
     image_id = body.get('image_id')
     status = body.get('status')
 
-    image: Images = None
+    dao = ImagesDao()
     try:
-        Images(image_id).update({'status': {'value': status, 'action': 'PUT'}})
-        image = Images.get(image_id)
+        image = dao.find(image_id)
+        actions = [image.status.set(status)]
+        updated_image = dao.update(image, actions)
 
-    except (UpdateError, GetError) as err:
-        return jsonify(err.msg), 500
-
-    try:
-        response_body = dict(image_id=image.image_id, status=image.status, type=image.type, size=image.size,
-                             created_at=image.created_at, version=image.version)
+        response_body = dict(image_id=updated_image.image_id, status=updated_image.status, type=updated_image.type,
+                             size=updated_image.size,
+                             created_at=updated_image.created_at, version=updated_image.version)
 
         return jsonify(response_body), 200
 
-    except Exception as err:
-        logger.error('type: %s', type(err))
+    except ApiError as err:
+        response_body = dict(code=err.error_body.code, message=err.error_body.message)
+        return jsonify(response_body), int(err.status_code)
 
-        return jsonify('Unexpected error occurred'), 500
+    except Exception as err:
+        logger.error('Catching Internal Server Error', err)
+
+        response_body = dict(code='internal_server_error', message=err.msg)
+        return jsonify(response_body), 500
 
 
 @app.route('/images/<image_id>', methods=['DELETE'])
 def delete_image(image_id: str):
     if image_id is None:
-        logger.error("Validation Failed")
+        response_body = dict(code='invalid_parameter', message='"image_id" is required.')
 
-        return jsonify('Required params is invalid'), 400
+        return jsonify(response_body), 400
 
     try:
-        image = Images.get(hash_key=image_id)
-        image.delete()
+        dao = ImagesDao()
+        image = dao.find(image_id)
 
-    except DoesNotExist as err:
+        if image is None:
+            response_body = dict(code='resource_not_found', message='Images was not found.')
+            return jsonify(response_body), 404
 
-        return jsonify(err.msg), 404
+        dao.delete(image)
 
-    except DeleteError as err:
+        return jsonify(dict(image_id=image_id)), 200
 
-        return jsonify(err.msg), 500
+    except ApiError as err:
+        response_body = dict(code=err.error_body.code, message=err.error_body.message)
+        return jsonify(response_body), int(err.status_code)
 
-    logger.info('photo_id = %s is successfully deleted.', image_id)
+    except Exception as err:
+        logger.error('Catching Internal Server Error', err)
 
-    return jsonify(dict(image_id=image_id)), 200
+        response_body = dict(code='internal_server_error', message=err.msg)
+        return jsonify(response_body), 500
