@@ -18,6 +18,7 @@ provider:
   runtime: python3.6
   stage: ${opt:stage, 'development'}
   region: ${opt:region, 'us-east-1'}
+  apiName: ${self:service}
   memorySize: 256
   timeout: 25
   logRetentionInDays: 14
