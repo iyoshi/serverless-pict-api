@@ -7,7 +7,7 @@
 #
 
 service: serverless-pict-api
-frameworkVersion: "^1.26.1"
+frameworkVersion: "^1.30.3"
 
 plugins:
   - serverless-python-requirements
