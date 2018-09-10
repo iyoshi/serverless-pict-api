@@ -1,5 +1,6 @@
 import json
 import logging
+import sys
 import uuid
 from typing import List
 
@@ -58,9 +59,10 @@ def post_images():
         return jsonify(response_body), int(err.status_code)
 
     except Exception as err:
-        logger.error('Catching Internal Server Error', err)
+        logger.error('Catching Internal Server Error')
 
-        response_body = dict(code='internal_server_error', message=err.message)
+        traceback = sys.exc_info()[2]
+        response_body = dict(code='internal_server_error', message=err.with_traceback(traceback))
         return jsonify(response_body), 500
 
 
@@ -86,9 +88,10 @@ def get_images():
 
 
     except Exception as err:
-        logger.error('Catching Internal Server Error', err)
+        logger.error('Catching Internal Server Error')
 
-        response_body = dict(code='internal_server_error', message=err.msg)
+        traceback = sys.exc_info()[2]
+        response_body = dict(code='internal_server_error', message=err.with_traceback(traceback))
         return jsonify(response_body), 500
 
 
@@ -116,9 +119,10 @@ def get_image(image_id: str):
         return jsonify(response_body), int(e.status_code)
 
     except Exception as err:
-        app.logger.error('Catching Internal Server Error', str(err))
+        logger.error('Catching Internal Server Error')
 
-        response_body = {'code': 'internal_server_error', 'message': str(err)}
+        traceback = sys.exc_info()[2]
+        response_body = dict(code='internal_server_error', message=err.with_traceback(traceback))
         return jsonify(response_body), 500
 
 
@@ -136,7 +140,7 @@ def update_image():
     dao = ImagesDao()
     try:
         image = dao.find(image_id)
-        actions = [image.status.set(status)]
+        actions = [Images.status.set(status)]
         updated_image = dao.update(image, actions)
 
         response_body = dict(image_id=updated_image.image_id, status=updated_image.status, type=updated_image.type,
@@ -150,9 +154,10 @@ def update_image():
         return jsonify(response_body), int(err.status_code)
 
     except Exception as err:
-        logger.error('Catching Internal Server Error', err)
+        logger.error('Catching Internal Server Error')
 
-        response_body = dict(code='internal_server_error', message=err.msg)
+        traceback = sys.exc_info()[2]
+        response_body = dict(code='internal_server_error', message=err.with_traceback(traceback))
         return jsonify(response_body), 500
 
 
@@ -180,7 +185,8 @@ def delete_image(image_id: str):
         return jsonify(response_body), int(err.status_code)
 
     except Exception as err:
-        logger.error('Catching Internal Server Error', err)
+        logger.error('Catching Internal Server Error')
 
-        response_body = dict(code='internal_server_error', message=err.msg)
+        traceback = sys.exc_info()[2]
+        response_body = dict(code='internal_server_error', message=err.with_traceback(traceback))
         return jsonify(response_body), 500

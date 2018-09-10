@@ -22,39 +22,38 @@ class ImagesDao:
         code = ex.cause.response['Error'].get('Code')
 
         if code == 'ConditionalCheckFailedException':
-            logger.warning(f'DynamoDB error occurred: {ex.msg}')
+            logger.warning('DynamoDB error occurred: %s', ex.msg)
             error_body = dict(code='conditional_check_failed',
                               message='A logical conflict to write request has occurred. Please try again later.')
 
             return ApiError(HTTPStatus.CONFLICT, error_body)
 
-        elif code == 'ProvisionedThroughputExceededException':
-            logger.warning(f'DynamoDB error occurred: {e.msg}')
+        if code == 'ProvisionedThroughputExceededException':
+            logger.warning('DynamoDB error occurred: %s', ex.msg)
             error_body = dict(code='provisioned_throughput_exceeded',
                               message='DB provisioned throughput has exceeded. Please try again later.')
 
             return ApiError(HTTPStatus.CONFLICT, error_body)
 
-        elif code == 'ServiceUnavailable':
-            logger.warning(f'DynamoDB error occurred: {ex.msg}')
+        if code == 'ServiceUnavailable':
+            logger.warning('DynamoDB error occurred: %s', ex.msg)
             error_body = dict(code='service_unavailable',
                               message='DB service unavailable now. Please try again later.')
 
             return ApiError(HTTPStatus.SERVICE_UNAVAILABLE, error_body)
 
-        elif code == 'InternalServerError':
-            logger.warning(f'DynamoDB error occurred: {ex.msg}')
+        if code == 'InternalServerError':
+            logger.warning('DynamoDB error occurred: %s', ex.msg)
             error_body = dict(code='internal_server_error',
                               message='Internal server error occurred at DB.')
 
             return ApiError(HTTPStatus.INTERNAL_SERVER_ERROR, error_body)
 
-        else:
-            logger.error(f'DynamoDB error occurred: {ex.msg}')
-            error_body = dict(code='internal_server_error',
-                              message='Unknown error occurred at DB.')
+        logger.error('DynamoDB error occurred: %s', ex.msg)
+        error_body = dict(code='internal_server_error',
+                          message='Unknown error occurred at DB.')
 
-            return ApiError(HTTPStatus.INTERNAL_SERVER_ERROR, error_body)
+        return ApiError(HTTPStatus.INTERNAL_SERVER_ERROR, error_body)
 
     def create(self, item: Images) -> Images:
 

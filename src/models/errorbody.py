@@ -1,4 +1,4 @@
-class ErrorBody(object):
+class ErrorBody:
 
     def __init__(self, code: str, message: str):
         self.__code = code
